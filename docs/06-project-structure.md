@@ -22,7 +22,7 @@ url-shortener/
     cache/
       redis_cache.go       # Redis cache operations
     encoder/
-      base62.go            # Base62 encoding logic
+      base62.go            # Random Base62 short code generation
   migrations/
     001_create_urls.sql    # Database migration
   configs/
@@ -45,6 +45,6 @@ url-shortener/
 | `internal/repository/` | Database access layer (CRUD operations) |
 | `internal/service/` | Business logic (URL shortening, validation) |
 | `internal/cache/` | Redis cache operations |
-| `internal/encoder/` | Base62 encoding and short code generation |
+| `internal/encoder/` | Random Base62 short code generation |
 | `migrations/` | SQL migration files for database schema |
 | `configs/` | Configuration files (YAML) |

@@ -14,6 +14,5 @@
 - **Consistency**: Eventual consistency is acceptable (short URL must resolve quickly after creation)
 
 ## Traffic Estimation
-- Assume 100M new URLs/month (~40 new URLs/sec write)
-- Assume 10:1 read:write ratio -> ~400M redirects/month (~400 reads/sec)
-- With enterprise scale, plan for 10x-100x headroom: ~4000 reads/sec, ~400 writes/sec
+- **Queries Per Second (QPS)**: ~40 QPS for 
+- **Requests Per Second (RPS)**: ~400 RPS  based on a 10:1 read-to-write ratio
