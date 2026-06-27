@@ -10,4 +10,3 @@
 | 03 | [Storage Design](03-storage-design.md) |
 | 04 | [Write Path API](04-write-path-api.md) |
 | 05 | [Read Path API](05-read-path-api.md) |
-| 06 | [Project Structure](06-project-structure.md) |
