@@ -1,0 +1,30 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environment ───────────────────────────────────────────────────────
+# Dependencies are installed fresh inside the container via uv sync
+.venv/
+
+# ── Version control ───────────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── Project tooling / docs (not needed at runtime) ───────────────────────────
+.qoder/
+design/
+
+# ── Environment files (secrets must never bake into the image) ───────────────
+.env
+.env.*
+*.env
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+
+# ── OS artifacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

@@ -5,12 +5,11 @@
 ### Schema
 ```sql
 CREATE TABLE urls (
-    short_url   BIGSERIAL PRIMARY KEY,
-    long_url    TEXT NOT NULL UNIQUE,
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id         BIGSERIAL PRIMARY KEY,
+    long_url   TEXT      NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
-
 
 ## Caching (Redis)
 

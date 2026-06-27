@@ -1,0 +1,42 @@
+services:
+
+  # ── PostgreSQL database ──────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: urlshortener
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Expose to host so you can connect with DBeaver / psql locally
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d urlshortener"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── FastAPI backend ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/urlshortener
+    ports:
+      # HOST_PORT:CONTAINER_PORT — makes the API reachable at localhost:8000
+      - "8000:8000"
+    volumes:
+      # Mount source so --reload picks up changes without rebuilding the image
+      - ./services/backend:/app/backend
+    depends_on:
+      db:
+        condition: service_healthy
+
+# ── Named volume for DB persistence ─────────────────────────────────────────
+volumes:
+  postgres_data:
