@@ -19,7 +19,7 @@ async def get_or_create_url(conn: asyncpg.Connection, long_url: str) -> dict:
 
     # Fetch the row (whether we just inserted it or it already existed).
     row = await conn.fetchrow(
-        "SELECT id, long_url, created_at FROM urls WHERE long_url = $1",
+        "SELECT short_url, long_url, created_at FROM urls WHERE long_url = $1",
         long_url,
     )
     return dict(row)
@@ -28,7 +28,7 @@ async def get_or_create_url(conn: asyncpg.Connection, long_url: str) -> dict:
 async def get_url_by_id(conn: asyncpg.Connection, url_id: int) -> dict | None:
     """Return the URL row for a given id, or None."""
     row = await conn.fetchrow(
-        "SELECT id, long_url, created_at FROM urls WHERE id = $1",
+        "SELECT short_url, long_url, created_at FROM urls WHERE short_url = $1",
         url_id,
     )
     return dict(row) if row is not None else None

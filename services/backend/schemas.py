@@ -8,12 +8,12 @@ class ShortenRequest(BaseModel):
 
 
 class URLCreateResponse(BaseModel):
-    short_code: int
+    short_url: int
     long_url: str
     created_at: datetime
 
 
 class URLLookupResponse(BaseModel):
-    short_code: int
+    short_url: int
     long_url: str
     created_at: datetime

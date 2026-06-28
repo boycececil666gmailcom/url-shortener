@@ -1,5 +1,7 @@
 # High-Level Architecture
 
+> This diagram shows the **target production design** 
+
 ```mermaid
 ---
 config:
@@ -56,4 +58,48 @@ flowchart TB
 
     Redirect --> Queue
     Queue --> Analytics
+```
+
+---
+
+# Current Implementation
+
+> This diagram shows **what is actually built right now** 
+
+```mermaid
+---
+config:
+  layout: elk
+  theme: neutral
+---
+flowchart TB
+
+    subgraph Host["Windows Host (localhost)"]
+        Dev["curl / Browser / pytest<br/>→ localhost:8000"]
+    end
+
+    subgraph DockerNetwork["Docker Internal Network (bridge)"]
+
+        subgraph API["url-shortener-api-1<br/>(FastAPI + Uvicorn)"]
+            direction TB
+            WriteHandler["POST /api/v1/shorten<br/>→ get_or_create_url()"]
+            ReadHandler["GET /api/v1/urls/:short_url<br/>GET /r/:short_url<br/>→ cache-aside"]
+        end
+
+        subgraph Cache["url-shortener-redis-1"]
+            RedisStore["Redis 7<br/>key: url:{short_url}<br/>TTL: 24 h"]
+        end
+
+        subgraph DB["url-shortener-db-1"]
+            Postgres[("PostgreSQL 16<br/>table: urls<br/>short_url · long_url · created_at")]
+        end
+
+    end
+
+    Dev -->|"port 8000 (exposed)"| API
+
+    WriteHandler -->|"INSERT … ON CONFLICT"| Postgres
+    ReadHandler -->|"GET url:{short_url}"| RedisStore
+    RedisStore -.->|"Cache MISS → SELECT WHERE short_url = ?"| Postgres
+    Postgres -.->|"Cache WARM"| RedisStore
 ```
