@@ -7,7 +7,7 @@ class ShortenRequest(BaseModel):
     long_url: HttpUrl
 
 
-class ShortenResponse(BaseModel):
+class URLCreateResponse(BaseModel):
     short_code: int
     long_url: str
     created_at: datetime

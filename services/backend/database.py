@@ -1,5 +1,4 @@
 import os
-
 import asyncpg
 
 # Read the connection string injected by docker-compose (or a local .env).

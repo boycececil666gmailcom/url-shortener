@@ -26,7 +26,7 @@ async def get_or_create_url(conn: asyncpg.Connection, long_url: str) -> dict:
 
 
 async def get_url_by_id(conn: asyncpg.Connection, url_id: int) -> dict | None:
-    """Return the URL row for a given integer short code, or None."""
+    """Return the URL row for a given id, or None."""
     row = await conn.fetchrow(
         "SELECT id, long_url, created_at FROM urls WHERE id = $1",
         url_id,

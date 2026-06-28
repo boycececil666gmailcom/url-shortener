@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse
 
 from .crud import get_or_create_url, get_url_by_id
 from .database import close_pool, create_pool, get_db
-from .schemas import ShortenRequest, ShortenResponse, URLLookupResponse
+from .schemas import ShortenRequest, URLCreateResponse, URLLookupResponse
 
 
 @asynccontextmanager
@@ -42,7 +42,7 @@ async def health():
 
 # ── Write Path ────────────────────────────────────────────────────────────────
 
-@app.post("/api/v1/shorten", response_model=ShortenResponse, status_code=201)
+@app.post("/api/v1/shorten", response_model=URLCreateResponse, status_code=201)
 async def shorten_url(
     body: ShortenRequest,
     conn: asyncpg.Connection = Depends(get_db),
@@ -52,7 +52,7 @@ async def shorten_url(
     Idempotent: submitting the same long_url twice returns the same short_code.
     """
     url_row = await get_or_create_url(conn, str(body.long_url))
-    return ShortenResponse(
+    return URLCreateResponse(
         short_code=url_row["id"],
         long_url=url_row["long_url"],
         created_at=url_row["created_at"],
