@@ -16,7 +16,7 @@ services:
       timeout: 5s
       retries: 10
 
-  # ── Redis cache ────────────────────────────────────────────────────────────
+  # ── Redis cache ──────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -26,26 +26,43 @@ services:
       timeout: 3s
       retries: 5
 
-  # ── FastAPI backend ──────────────────────────────────────────────────────────
-  api:
+  # ── Shortener Service (internal, port 8001) ──────────────────────────────────
+  # Owns the database and Redis cache.
+  # NOT exposed to the host — only reachable inside the Docker network.
+  shortener:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: services/shortener/Dockerfile
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/urlshortener
       REDIS_URL: redis://redis:6379
-    ports:
-      # HOST_PORT:CONTAINER_PORT — makes the API reachable at localhost:8000
-      - "8000:8000"
     volumes:
       # Mount source so --reload picks up changes without rebuilding the image
-      - ./services/backend:/app/backend
+      - ./services/shortener:/app/shortener
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  # ── API Gateway (public-facing, port 8000) ────────────────────────────────────
+  # Receives all requests from the browser.
+  # Forwards to internal services via httpx (no business logic here).
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    restart: unless-stopped
+    environment:
+      SHORTENER_URL: http://shortener:8001
+    ports:
+      # Only the gateway is exposed to the host — all other services are internal.
+      - "8000:8000"
+    volumes:
+      - ./services/gateway:/app/gateway
+    depends_on:
+      - shortener
 
 # ── Named volume for DB persistence ─────────────────────────────────────────
 volumes:

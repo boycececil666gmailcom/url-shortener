@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     await close_redis_pool()
 
 
-app = FastAPI(title="URL Shortener", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Shortener Service", version="0.1.0", lifespan=lifespan)
 
 
 # ── Health ────────────────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ async def health():
 
 # ── Write Path ────────────────────────────────────────────────────────────────
 
-@app.post("/api/v1/shorten", response_model=URLCreateResponse, status_code=201)
+@app.post("/shorten", response_model=URLCreateResponse, status_code=201)
 async def shorten_url(
     body: ShortenRequest,
     conn: asyncpg.Connection = Depends(get_db),
@@ -64,7 +64,7 @@ async def shorten_url(
 
 # ── Read Path ─────────────────────────────────────────────────────────────────
 
-@app.get("/api/v1/urls/{short_url}", response_model=URLLookupResponse)
+@app.get("/urls/{short_url}", response_model=URLLookupResponse)
 async def get_url(
     short_url: int,
     conn: asyncpg.Connection = Depends(get_db),

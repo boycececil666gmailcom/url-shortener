@@ -12,7 +12,3 @@
 - **Latency**: Redirects should complete in < 100ms
 - **Durability**: Data must not be lost
 - **Consistency**: Eventual consistency is acceptable (short URL must resolve quickly after creation)
-
-## Traffic Estimation
-- **Queries Per Second (QPS)**: ~40 QPS for 
-- **Requests Per Second (RPS)**: ~400 RPS  based on a 10:1 read-to-write ratio
