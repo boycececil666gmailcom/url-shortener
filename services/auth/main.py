@@ -11,9 +11,12 @@ from contextlib import asynccontextmanager
 
 import asyncpg
 from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
+import jwt
 
-from .database import close_pool, create_db_pool, get_db, pool
+from . import database
+from .database import close_pool, create_db_pool, get_db
 from .passwords import hash_password, verify_password
 from .tokens import (
     close_redis_pool,
@@ -24,6 +27,8 @@ from .tokens import (
     get_user_id_by_token,
     store_refresh_token,
     REFRESH_TOKEN_TTL_SECONDS,
+    JWT_SECRET,
+    JWT_ALGORITHM,
 )
 
 # ── Pydantic schemas ─────────────────────────────────────────────────────────
@@ -46,7 +51,7 @@ async def lifespan(app: FastAPI):
     await create_redis_pool()
 
     # Auto-create the users table if it doesn't exist yet.
-    async with pool.acquire() as conn:
+    async with database.pool.acquire() as conn:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id            SERIAL       PRIMARY KEY,
@@ -63,6 +68,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Auth Service", version="0.1.0", lifespan=lifespan)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 # ── Health ────────────────────────────────────────────────────────────────────
@@ -153,6 +159,19 @@ async def refresh(
     # 3. Issue a fresh access token.
     access_token = create_access_token(user_id)
     return TokenResponse(access_token=access_token)
+
+
+# ── GET /auth/validate ────────────────────────────────────────────────────────
+
+@app.get("/auth/validate")
+async def validate_token(token: str = Depends(oauth2_scheme)):
+    """Validate a JWT access token and return its payload."""
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
 
 
 # ── POST /auth/logout ────────────────────────────────────────────────────────

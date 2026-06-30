@@ -14,7 +14,7 @@ import os
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, Depends
 
 
 # ── Internal service URLs ─────────────────────────────────────────────────────
@@ -47,6 +47,19 @@ def get_client() -> httpx.AsyncClient:
 
 app = FastAPI(title="API Gateway", version="0.1.0", lifespan=lifespan)
 
+async def verify_token(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    resp = await get_client().get(
+        f"{AUTH_URL}/auth/validate",
+        headers={"Authorization": auth_header}
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return resp.json()
+
 
 # ── Health ────────────────────────────────────────────────────────────────────
 
@@ -58,7 +71,7 @@ async def health():
 # ── Write Path ────────────────────────────────────────────────────────────────
 
 @app.post("/api/v1/shorten", status_code=201)
-async def shorten_url(request: Request):
+async def shorten_url(request: Request, token: dict = Depends(verify_token)):
     """Forward POST /api/v1/shorten to the Shortener service."""
     body = await request.body()
     headers = {"Content-Type": "application/json"}
@@ -80,7 +93,7 @@ async def shorten_url(request: Request):
 # ── Read Path ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/v1/urls/{short_url}")
-async def get_url(short_url: int):
+async def get_url(short_url: int, token: dict = Depends(verify_token)):
     """Forward GET /api/v1/urls/{short_url} to the Shortener service."""
     resp = await get_client().get(f"{SHORTENER_URL}/urls/{short_url}")
     _raise_for_upstream_error(resp)

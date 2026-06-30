@@ -20,11 +20,11 @@ flowchart TB
     end
 
     subgraph WritePath["Write Path"]
-        APIGW["API gateway<br/>(Kong / Express / Fastify)"]
+        APIGW["API gateway<br/>(FastAPI)"]
     end
 
     subgraph ReadPath["Read Path"]
-        Redirect["API gateway<br/>(Kong / Express / Fastify)"]
+        Redirect["API gateway<br/>(FastAPI)"]
     end
 
     subgraph AuthSvc["Auth Service"]
@@ -35,11 +35,11 @@ flowchart TB
     end
 
     subgraph ShortenerSvc["Shortener Service"]
-        Shortener["Shortener handler<br/>(Node.js / Go)"]
+        Shortener["Shortener handler<br/>(FastAPI + Uvicorn )"]
         subgraph ShortenerDB["Owned Storage"]
-            Redis["Cache<br/>(Redis / Memcached)"]
-            Primary[("Primary DB<br/>(PostgreSQL / MySQL)")]
-            Replica[("Replica DB<br/>(PostgreSQL / MySQL)")]
+            Redis["Cache<br/>(Redis)"]
+            Primary[("Primary DB<br/>(PostgreSQL)")]
+            Replica[("Replica DB<br/>(PostgreSQL)")]
         end
     end
 
@@ -101,6 +101,7 @@ flowchart TB
 
         subgraph AuthCtr["auth (FastAPI + Uvicorn, port 8002)"]
             direction TB
+            ValidateH["GET /auth/validate"]
             LoginH["POST /auth/login"]
             RefreshH["POST /auth/refresh"]
             LogoutH["POST /auth/logout"]
