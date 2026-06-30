@@ -12,7 +12,3 @@ dependencies = [
     "pyjwt>=2.13.0",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-]
