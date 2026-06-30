@@ -99,7 +99,14 @@ flowchart TB
             ReadH["GET /urls/:id<br/>GET /r/:id"]
         end
 
-        subgraph RedisCtr["redis (Redis 7, port 6379)"]
+        subgraph AuthCtr["auth (FastAPI + Uvicorn, port 8002)"]
+            direction TB
+            LoginH["POST /auth/login"]
+            RefreshH["POST /auth/refresh"]
+            LogoutH["POST /auth/logout"]
+        end
+
+        subgraph RedisCtr["shortener-redis (Redis 7, port 6379)"]
             Cache["key: url:{id}<br/>TTL: 24h"]
         end
 
@@ -107,12 +114,25 @@ flowchart TB
             PG[("table: urls")]
         end
 
+        subgraph AuthRedisCtr["auth-redis (Redis 7, port 6379)"]
+            TokenStore["key: refresh_token:{token}<br/>value: user_id<br/>TTL: 30d"]
+        end
+
+        subgraph AuthDBCtr["auth-db (PostgreSQL 16, port 5432)"]
+            UserPG[("table: users")]
+        end
+
     end
 
     ExternalClient -->|"port 8000 - only exposed port"| GW
     GW -->|"httpx - internal network only"| ShortenerCtr
+    GW -->|"httpx - internal network only"| AuthCtr
     WriteH -->|"INSERT ON CONFLICT"| PG
     ReadH -->|"GET url:{id}"| Cache
     Cache -.->|"Cache MISS"| PG
     PG -.->|"Cache WARM"| Cache
+    LoginH -->|"SELECT / INSERT"| UserPG
+    LoginH -->|"SET refresh_token:{token}"| TokenStore
+    RefreshH -->|"GET refresh_token:{token}"| TokenStore
+    LogoutH -->|"DEL refresh_token:{token}"| TokenStore
 ```

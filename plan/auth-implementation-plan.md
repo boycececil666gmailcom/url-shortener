@@ -43,3 +43,6 @@ This document outlines the steps to implement the authentication service based o
 1. Read Refresh Token from `Cookie`.
 2. Delete the corresponding key from Redis (`DEL refresh_token:<opaque_string>`).
 3. Return 200 OK and clear the cookie.
+
+## 3. Update General Design Diagram
+- Update the mermaid diagram in the general design document to include the Authentication Service, User DB (Postgres), and Token DB (Redis).

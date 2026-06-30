@@ -10,6 +10,7 @@ Responsibilities:
 No business logic lives here.
 """
 
+import os
 from contextlib import asynccontextmanager
 
 import httpx
@@ -18,7 +19,8 @@ from fastapi import FastAPI, HTTPException, Request, Response
 
 # ── Internal service URLs ─────────────────────────────────────────────────────
 # These are Docker internal hostnames — not exposed to the outside world.
-SHORTENER_URL = "http://shortener:8001"
+SHORTENER_URL = os.environ.get("SHORTENER_URL", "http://shortener:8001")
+AUTH_URL = os.environ.get("AUTH_URL", "http://auth:8002")
 
 
 # ── Shared async httpx client ─────────────────────────────────────────────────
@@ -100,6 +102,62 @@ async def redirect(short_url: int):
     return Response(
         content=resp.content,
         status_code=resp.status_code,
+        headers=dict(resp.headers),
+    )
+
+
+# ── Auth Routes ───────────────────────────────────────────────────────────────
+
+@app.post("/auth/login")
+async def auth_login(request: Request):
+    """Forward POST /auth/login to the Auth service."""
+    body = await request.body()
+    resp = await get_client().post(
+        f"{AUTH_URL}/auth/login",
+        content=body,
+        headers={"Content-Type": "application/json"},
+    )
+    _raise_for_upstream_error(resp)
+    # Forward the response including Set-Cookie headers from the auth service.
+    return Response(
+        content=resp.content,
+        status_code=resp.status_code,
+        media_type="application/json",
+        headers=dict(resp.headers),
+    )
+
+
+@app.post("/auth/refresh")
+async def auth_refresh(request: Request):
+    """Forward POST /auth/refresh to the Auth service."""
+    # Pass cookies through so the auth service can read refresh_token.
+    cookies = request.cookies
+    resp = await get_client().post(
+        f"{AUTH_URL}/auth/refresh",
+        cookies=cookies,
+    )
+    _raise_for_upstream_error(resp)
+    return Response(
+        content=resp.content,
+        status_code=resp.status_code,
+        media_type="application/json",
+    )
+
+
+@app.post("/auth/logout")
+async def auth_logout(request: Request):
+    """Forward POST /auth/logout to the Auth service."""
+    cookies = request.cookies
+    resp = await get_client().post(
+        f"{AUTH_URL}/auth/logout",
+        cookies=cookies,
+    )
+    _raise_for_upstream_error(resp)
+    # Forward the response including Set-Cookie (clear cookie) headers.
+    return Response(
+        content=resp.content,
+        status_code=resp.status_code,
+        media_type="application/json",
         headers=dict(resp.headers),
     )
 

@@ -6,14 +6,14 @@ from fastapi.responses import RedirectResponse
 
 from .cache import close_redis_pool, create_redis_pool, get_cached_url, set_cached_url
 from .crud import get_or_create_url, get_url_by_id
-from .database import close_pool, create_pool, get_db
+from .database import close_pool, create_db_pool, get_db
 from .schemas import ShortenRequest, URLCreateResponse, URLLookupResponse
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Open the DB pool and create the table on startup; close pool on shutdown."""
-    await create_pool()
+    await create_db_pool()
     await create_redis_pool()
 
     # Create the urls table if it doesn't exist yet.

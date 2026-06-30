@@ -1,7 +1,6 @@
 # ── Base image ────────────────────────────────────────────────────────────────
 FROM python:3.11-slim
 
-# Keeps Python from buffering stdout/stderr (important for container logs)
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
@@ -12,18 +11,17 @@ RUN pip install --no-cache-dir uv
 WORKDIR /app
 
 # ── Install dependencies (layer-cache friendly) ───────────────────────────────
-# Copy only the dependency manifests first so Docker can cache this layer
-# and skip re-installing when only application code changes.
-COPY services/shortener/pyproject.toml services/shortener/uv.lock ./
+# Uses the auth-specific pyproject.toml so only auth dependencies are installed.
+COPY services/auth/pyproject.toml services/auth/uv.lock ./
 RUN uv sync --frozen --no-dev
 
 # ── Copy application source ───────────────────────────────────────────────────
-COPY services/shortener/ ./shortener/
+COPY services/auth/ ./auth/
 
 # ── Expose port ───────────────────────────────────────────────────────────────
-EXPOSE 8001
+EXPOSE 8002
 
 # ── Run the server ────────────────────────────────────────────────────────────
 # Internal service — not exposed to the host, only reachable inside Docker network.
-CMD ["uv", "run", "uvicorn", "shortener.main:app", \
-     "--host", "0.0.0.0", "--port", "8001", "--reload"]
+CMD ["uv", "run", "uvicorn", "auth.main:app", \
+     "--host", "0.0.0.0", "--port", "8002", "--reload"]

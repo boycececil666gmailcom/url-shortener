@@ -82,7 +82,7 @@ sequenceDiagram
             
         else Refresh Token Valid
             R-->>A: Return user_id
-            A->>PG: Optional: check if user_id still exists/active
+            A->>PG: Check if user_id still exists/active
             PG-->>A: User is Active
             A->>A: Generate NEW Access Token (JWT, 15m)
             A-->>G: 200 OK {access_token: "..."}

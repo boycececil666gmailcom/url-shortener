@@ -8,7 +8,7 @@ REDIS_URL = os.environ["REDIS_URL"]
 # TTL for cached URL entries: 24 hours.
 # After this, the entry is automatically evicted and the next request will
 # fetch from Postgres and warm the cache again.
-_CACHE_TTL_SECONDS = 60 * 60 * 24
+CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", str(60 * 60 * 24)))
 
 # Module-level pool, created once at startup (mirrors the pattern in database.py).
 redis_pool: aioredis.Redis | None = None
@@ -54,5 +54,5 @@ async def set_cached_url(row: dict) -> None:
     await redis_pool.set(
         _cache_key(row["short_url"]),
         json.dumps(payload),
-        ex=_CACHE_TTL_SECONDS,
+        ex=CACHE_TTL_SECONDS,
     )

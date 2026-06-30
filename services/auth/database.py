@@ -1,13 +1,11 @@
 import os
 import asyncpg
 
-# Read the connection string injected by docker-compose (or a local .env).
+# Read the connection string injected by docker-compose.
 # Example: postgresql://postgres:postgres@db:5432/urlshortener
 DATABASE_URL = os.environ["DATABASE_URL"]
 
 # A connection pool is created once at startup and shared across all requests.
-# asyncpg manages a set of open TCP connections to Postgres so each request
-# doesn't pay the cost of establishing a new connection every time.
 pool: asyncpg.Pool | None = None
 
 

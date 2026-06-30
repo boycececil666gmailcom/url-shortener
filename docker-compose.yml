@@ -1,7 +1,11 @@
 services:
 
-  # ── PostgreSQL database ──────────────────────────────────────────────────────
-  db:
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # Shortener Service infrastructure
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  # ── PostgreSQL database (Shortener) ─────────────────────────────────────────
+  shortener-db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -16,8 +20,8 @@ services:
       timeout: 5s
       retries: 10
 
-  # ── Redis cache ──────────────────────────────────────────────────────────────
-  redis:
+  # ── Redis cache (Shortener) ─────────────────────────────────────────────────
+  shortener-redis:
     image: redis:7-alpine
     restart: unless-stopped
     healthcheck:
@@ -35,16 +39,74 @@ services:
       dockerfile: services/shortener/Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/urlshortener
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://postgres:postgres@shortener-db:5432/urlshortener
+      REDIS_URL: redis://shortener-redis:6379
+      CACHE_TTL_SECONDS: 86400
     volumes:
       # Mount source so --reload picks up changes without rebuilding the image
       - ./services/shortener:/app/shortener
     depends_on:
-      db:
+      shortener-db:
         condition: service_healthy
-      redis:
+      shortener-redis:
         condition: service_healthy
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # Auth Service infrastructure
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  # ── PostgreSQL database (Auth) ──────────────────────────────────────────────
+  auth-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Redis token store (Auth) ────────────────────────────────────────────────
+  auth-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Auth Service (internal, port 8002) ──────────────────────────────────────
+  # Handles user registration, login, token refresh, and logout.
+  # NOT exposed to the host — only reachable inside the Docker network.
+  auth:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@auth-db:5432/auth
+      REDIS_URL: redis://auth-redis:6379
+      JWT_SECRET: dev-secret-change-me
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRATION_MINUTES: 15
+      REFRESH_TOKEN_TTL_SECONDS: 2592000
+    volumes:
+      - ./services/auth:/app/auth
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      auth-redis:
+        condition: service_healthy
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # API Gateway
+  # ═══════════════════════════════════════════════════════════════════════════════
 
   # ── API Gateway (public-facing, port 8000) ────────────────────────────────────
   # Receives all requests from the browser.
@@ -56,6 +118,7 @@ services:
     restart: unless-stopped
     environment:
       SHORTENER_URL: http://shortener:8001
+      AUTH_URL: http://auth:8002
     ports:
       # Only the gateway is exposed to the host — all other services are internal.
       - "8000:8000"
@@ -63,7 +126,10 @@ services:
       - ./services/gateway:/app/gateway
     depends_on:
       - shortener
+      - auth
 
-# ── Named volume for DB persistence ─────────────────────────────────────────
+# ── Named volumes for DB persistence ────────────────────────────────────────
 volumes:
   postgres_data:
+  auth_postgres_data:
+
