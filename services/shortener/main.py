@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 
 from .cache import close_redis_pool, create_redis_pool, get_cached_url, set_cached_url
-from .crud import get_or_create_url, get_url_by_id
+from .crud import create_new_unique_long_url, get_url_by_id
 from .database import close_pool, create_db_pool, get_db
 from .schemas import ShortenRequest, URLCreateResponse, URLLookupResponse
 
@@ -54,7 +54,7 @@ async def shorten_url(
 
     Idempotent: submitting the same long_url twice returns the same short_url.
     """
-    url_row = await get_or_create_url(conn, str(body.long_url))
+    url_row = await create_new_unique_long_url(conn, str(body.long_url))
     return URLCreateResponse(
         short_url=url_row["short_url"],
         long_url=url_row["long_url"],

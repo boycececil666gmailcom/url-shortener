@@ -1,7 +1,7 @@
 import asyncpg
 
 
-async def get_or_create_url(conn: asyncpg.Connection, long_url: str) -> dict:
+async def create_new_unique_long_url(conn: asyncpg.Connection, long_url: str) -> dict:
     """Insert long_url if it doesn't exist, then return the row.
 
     Uses INSERT ... ON CONFLICT DO NOTHING so concurrent requests for the
