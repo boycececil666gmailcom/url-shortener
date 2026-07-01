@@ -2,17 +2,17 @@
 echo ========================================================
 echo Starting URL Shortener in PRODUCTION mode
 echo ========================================================
-echo Notice: Only the API Gateway (port 8000) will be exposed to the host machine.
-echo Internal APIs (ports 8001, 8002), Databases (5433, 5434), and Caches (6380, 6381) 
-echo will be strictly isolated inside the Docker network.
+echo Notice: The application will be deployed into your active Kubernetes cluster.
+echo Internal APIs, Databases, and Caches will be strictly isolated inside the cluster network.
+echo Only the API Gateway is exposed externally via the Ingress controller.
 echo.
 
-echo 1. Tearing down any existing development containers...
-docker compose down
+echo 1. Applying base configurations and secrets...
+kubectl apply -f k8s/config.yaml
 echo.
 
-echo 2. Starting production containers...
-docker compose -f docker-compose.yml up -d --build
+echo 2. Applying all Kubernetes manifests...
+kubectl apply -R -f k8s/
 echo.
 
 echo ========================================================
