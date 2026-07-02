@@ -13,8 +13,8 @@ echo.
 echo ========================================================
 echo 2. Starting Kubernetes Network
 echo ========================================================
-kubectl apply -f ../k8s/config.yaml
-kubectl apply -R -f ../k8s/
+kubectl apply -f "%~dp0..\k8s\config.yaml"
+kubectl apply -R -f "%~dp0..\k8s"
 :: Give the pods a moment to initialize before flushing
 timeout /t 10 /nobreak
 

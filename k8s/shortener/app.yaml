@@ -4,7 +4,6 @@ metadata:
   name: shortener
   namespace: url-shortener
 spec:
-  replicas: 3
   selector:
     matchLabels:
       app: shortener
@@ -17,6 +16,13 @@ spec:
       - name: shortener
         image: url-shortener-shortener:latest
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
         ports:
         - containerPort: 8001
         envFrom:
@@ -37,3 +43,23 @@ spec:
     - protocol: TCP
       port: 8001
       targetPort: 8001
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: shortener
+  namespace: url-shortener
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: shortener
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
