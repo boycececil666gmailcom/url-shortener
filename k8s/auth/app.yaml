@@ -25,6 +25,19 @@ spec:
             memory: 256Mi
         ports:
         - containerPort: 8002
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres.auth-db.credentials.postgresql.acid.zalan.do
+              key: password
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DB_PASSWORD)@auth-db:5432/auth"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_REDIS_URL
         envFrom:
         - configMapRef:
             name: app-config

@@ -25,6 +25,19 @@ spec:
             memory: 256Mi
         ports:
         - containerPort: 8001
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres.shortener-db.credentials.postgresql.acid.zalan.do
+              key: password
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DB_PASSWORD)@shortener-db:5432/urlshortener"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: SHORTENER_REDIS_URL
         envFrom:
         - configMapRef:
             name: app-config
