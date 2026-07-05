@@ -49,44 +49,25 @@ docker build -t "$REGISTRY/shortener:$SHORTENER_TAG" -f "services/shortener/Dock
 echo "Pushing shortener image..."
 docker push "$REGISTRY/shortener:$SHORTENER_TAG"
 
-# 3. Enable GKE API
-echo "Enabling Container API..."
-gcloud services enable container.googleapis.com
+# 3. Run Terraform to provision GKE Cluster, Namespace, and Helm Operators
+echo "Running Terraform to provision GKE and Operators..."
+pushd terraform-gcp > /dev/null
+terraform init
+terraform apply -auto-approve \
+    -var="project_id=$PROJECT_ID" \
+    -var="cluster_name=$CLUSTER_NAME" \
+    -var="region=$REGION" \
+    -var="namespace=$NAMESPACE"
+popd > /dev/null
 
-# 4. Create GKE Autopilot Cluster
-echo "Creating GKE Autopilot Cluster '$CLUSTER_NAME' in '$REGION'..."
-gcloud container clusters create-auto "$CLUSTER_NAME" \
-    --region="$REGION" \
-    --project="$PROJECT_ID"
-
-# 5. Authenticate kubectl with the GKE cluster
+# 4. Authenticate kubectl with the GKE cluster
 echo "Fetching credentials for cluster..."
 gcloud container clusters get-credentials "$CLUSTER_NAME" \
     --region="$REGION" \
     --project="$PROJECT_ID"
 
-# 6. Create Namespace
-echo "Creating namespace '$NAMESPACE'..."
-kubectl create namespace "$NAMESPACE" || echo "Namespace already exists"
 
-# 7. Install Zalando Postgres Operator
-echo "Installing Zalando Postgres Operator via Helm..."
-helm repo add postgres-operator-charts https://opensource.zalando.com/postgres-operator/charts/postgres-operator
-helm repo update
-helm install postgres-operator postgres-operator-charts/postgres-operator \
-    --namespace "$NAMESPACE"
-
-# 8. Install Spotahome Redis Failover Operator
-echo "Installing Spotahome Redis Failover Operator..."
-kubectl apply -f https://raw.githubusercontent.com/spotahome/redis-operator/master/manifests/schema.yaml
-kubectl apply -f https://raw.githubusercontent.com/spotahome/redis-operator/master/manifests/operator.yaml
-
-# 9. Wait for Operators to be ready
-echo "Waiting for operators to be ready..."
-kubectl rollout status deployment/postgres-operator -n "$NAMESPACE" --timeout=600s
-kubectl rollout status deployment/redis-operator -n default --timeout=600s # Standard deployment namespace for redis operator YAML
-
-# 10. Apply Application Config and DB/Redis Resources
+# 5. Apply Application Config and DB/Redis Resources
 echo "Deploying config, secrets, and database/cache clusters..."
 kubectl apply -f k8s-gcp/config.yaml
 kubectl apply -f k8s-gcp/auth/db-cluster.yaml
@@ -94,11 +75,11 @@ kubectl apply -f k8s-gcp/auth/redis-cluster.yaml
 kubectl apply -f k8s-gcp/shortener/db-cluster.yaml
 kubectl apply -f k8s-gcp/shortener/redis-cluster.yaml
 
-# 11. Wait for databases to initialize
+# 6. Wait for databases to initialize
 echo "Waiting for PostgreSQL clusters to initialize (this might take a few minutes)..."
 echo "You can check progress using: kubectl get postgresql -n $NAMESPACE"
 
-# 12. Apply Application Deployments (Auth, Shortener, Gateway)
+# 7. Apply Application Deployments (Auth, Shortener, Gateway)
 echo "Deploying application services..."
 kubectl apply -f k8s-gcp/auth/app.yaml
 kubectl apply -f k8s-gcp/shortener/app.yaml
@@ -126,44 +107,24 @@ echo "Check gateway service: kubectl get svc gateway -n $NAMESPACE"
 #  +------------+------------+
 #               |
 #  +------------v------------+
-#  |    3. Enable GKE API    |
+#  |   3. Run Terraform      | ----> [ GKE Cluster, Namespace, & Operators ]
 #  +------------+------------+
 #               |
 #  +------------v------------+
-#  | 4. Create GKE Cluster   |
+#  |  4. get-credentials GKE |
 #  +------------+------------+
 #               |
 #  +------------v------------+
-#  |  5. get-credentials GKE |
-#  +------------+------------+
-#               |
-#  +------------v------------+
-#  |  6. Create Namespace    |
-#  +------------+------------+
-#               |
-#  +------------v------------+
-#  | 7. Install Helm pg-op   |
-#  +------------+------------+
-#               |
-#  +------------v------------+
-#  | 8. Install redis-op     |
-#  +------------+------------+
-#               |
-#  +------------v------------+
-#  | 9. Wait Operators Ready |
-#  +------------+------------+
-#               |
-#  +------------v------------+
-#  | 10. Apply Config, DB,   |
+#  | 5. Apply Config, DB,    |
 #  |     & Redis Clusters    |
 #  +------------+------------+
 #               |
 #  +------------v------------+
-#  |  11. Wait for DBs Init  |
+#  |  6. Wait for DBs Init   |
 #  +------------+------------+
 #               |
 #  +------------v------------+
-#  | 12. Deploy App Services |
+#  | 7. Deploy App Services  |
 #  |     & Set version tags  |
 #  +-------------------------+
 ################################################################################

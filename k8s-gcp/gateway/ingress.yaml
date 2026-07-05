@@ -8,11 +8,12 @@ metadata:
 spec:
   rules:
   - http:
-    paths:
-    - path: /
-      pathType: Prefix
-      backend:
-        service:
-          name: gateway
-          port:
-            number: 8000
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway
+            port:
+              number: 8000
+
