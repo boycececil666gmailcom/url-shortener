@@ -55,12 +55,13 @@ echo Waiting for Auth and Shortener applications to be ready...
 kubectl wait -n url-shortener --for=condition=available deployment/auth --timeout=120s
 kubectl wait -n url-shortener --for=condition=available deployment/shortener --timeout=120s
 echo.
+
 echo ========================================================
 echo 3. Flushing databases and caches via Kubernetes
 echo ========================================================
 
 echo Flushing Shortener PostgreSQL...
-:: Find the primary Postgres pod (Zalando operator labels the primary)
+:: Find the primary Postgres pod
 for /f "tokens=*" %%i in ('kubectl get pods -n url-shortener -l "application=spilo,cluster-name=shortener-db,spilo-role=master" -o jsonpath^="{.items[0].metadata.name}"') do set SHORTENER_DB_POD=%%i
 kubectl exec -n url-shortener %SHORTENER_DB_POD% -- psql -U postgres -c "CREATE DATABASE urlshortener;" 2>nul
 kubectl exec -n url-shortener %SHORTENER_DB_POD% -- psql -U postgres -d urlshortener -c "TRUNCATE TABLE urls RESTART IDENTITY CASCADE;"
@@ -71,7 +72,6 @@ kubectl exec -n url-shortener %AUTH_DB_POD% -- psql -U postgres -c "CREATE DATAB
 kubectl exec -n url-shortener %AUTH_DB_POD% -- psql -U postgres -d auth -c "TRUNCATE TABLE users RESTART IDENTITY CASCADE;"
 
 echo Flushing Shortener Redis...
-:: Find the Redis master node (Spotahome operator labels the master)
 for /f "tokens=*" %%i in ('kubectl get pods -n url-shortener -l "redisfailovers-role=master,redisfailovers.databases.spotahome.com/name=shortener-redis" -o jsonpath^="{.items[0].metadata.name}"') do set SHORTENER_REDIS_POD=%%i
 kubectl exec -n url-shortener %SHORTENER_REDIS_POD% -- redis-cli FLUSHALL
 
@@ -81,8 +81,18 @@ kubectl exec -n url-shortener %AUTH_REDIS_POD% -- redis-cli FLUSHALL
 
 echo.
 echo ========================================================
-echo 4. Starting Port-Forward for E2E Tests
+echo 4. Starting Port-Forward and Running Tests
 echo ========================================================
-echo Tunneling Kubernetes Gateway to localhost:8000...
-echo Leave this running and execute `pytest` in another terminal!
-kubectl port-forward -n url-shortener svc/gateway 8000:8000
+echo Tunneling Kubernetes Gateway to localhost:8000 in background...
+start "kubectl-port-forward" /b kubectl port-forward -n url-shortener svc/gateway 8000:8000
+timeout /t 3 >nul
+
+echo Running E2E Tests...
+python -m pytest "%~dp0e2eTest\test_shortener_e2e.py"
+set TEST_EXIT_CODE=%ERRORLEVEL%
+
+echo.
+echo Stopping Port-Forward tunnel...
+wmic process where "CommandLine like '%%port-forward%%svc/gateway%%8000:8000%%'" call terminate >nul 2>&1
+
+exit /b %TEST_EXIT_CODE%

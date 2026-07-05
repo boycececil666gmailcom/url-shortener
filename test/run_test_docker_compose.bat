@@ -53,3 +53,9 @@ echo Flushing Auth Redis Cluster...
 docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T auth-redis-1 redis-cli FLUSHALL
 docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T auth-redis-2 redis-cli FLUSHALL
 docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T auth-redis-3 redis-cli FLUSHALL
+
+echo.
+echo ========================================================
+echo 5. Running E2E Tests
+echo ========================================================
+python -m pytest "%~dp0e2eTest\test_shortener_e2e.py"

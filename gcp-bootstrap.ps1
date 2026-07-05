@@ -82,8 +82,21 @@ kubectl apply -f k8s-gcp/shortener/db-cluster.yaml
 kubectl apply -f k8s-gcp/shortener/redis-cluster.yaml
 
 # 6. Wait for databases to initialize
-Write-Output "Waiting for PostgreSQL clusters to initialize (this might take a few minutes)..."
-Write-Output "You can check progress using: kubectl get postgresql -n $NAMESPACE"
+Write-Output "Waiting for PostgreSQL clusters to initialize..."
+while (!(kubectl get pods -n $NAMESPACE -l 'application=spilo,cluster-name=shortener-db,spilo-role=master' -o name 2>$null)) { Start-Sleep 2 }
+while (!(kubectl get pods -n $NAMESPACE -l 'application=spilo,cluster-name=auth-db,spilo-role=master' -o name 2>$null)) { Start-Sleep 2 }
+
+kubectl wait -n $NAMESPACE --for=condition=Ready pod -l "application=spilo,cluster-name=shortener-db,spilo-role=master" --timeout=300s
+kubectl wait -n $NAMESPACE --for=condition=Ready pod -l "application=spilo,cluster-name=auth-db,spilo-role=master" --timeout=300s
+
+# Create logical databases if they do not exist
+Write-Output "Creating logical databases..."
+$SHORTENER_DB_POD = (kubectl get pods -n $NAMESPACE -l "application=spilo,cluster-name=shortener-db,spilo-role=master" -o jsonpath="{.items[0].metadata.name}")
+kubectl exec -n $NAMESPACE $SHORTENER_DB_POD -c postgres -- psql -U postgres -c "CREATE DATABASE urlshortener;" 2>$null
+
+$AUTH_DB_POD = (kubectl get pods -n $NAMESPACE -l "application=spilo,cluster-name=auth-db,spilo-role=master" -o jsonpath="{.items[0].metadata.name}")
+kubectl exec -n $NAMESPACE $AUTH_DB_POD -c postgres -- psql -U postgres -c "CREATE DATABASE auth;" 2>$null
+
 
 # 7. Apply Application Deployments (Auth, Shortener, Gateway)
 Write-Output "Deploying application services..."

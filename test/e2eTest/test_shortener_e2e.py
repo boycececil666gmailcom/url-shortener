@@ -2,9 +2,10 @@ import pytest
 import requests
 import uuid
 import time
+import os
 
-# Base URL for the API Gateway as exposed by docker-compose.yml
-GATEWAY_URL = "http://localhost:8000"
+# Base URL for the API Gateway (e.g. Docker Compose, port-forward, or GKE Ingress)
+GATEWAY_URL = os.environ.get("GATEWAY_URL", "http://localhost:8000")
 
 def test_gateway_health():
     """Verify that the gateway is up and running."""
