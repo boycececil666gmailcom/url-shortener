@@ -1,3 +1,4 @@
+#This port forwarding enables direct API test in local environment
 services:
   # Expose Shortener service and its databases
   shortener:
@@ -28,3 +29,13 @@ services:
     ports:
       # Maps host port 6381 to container port 6379
       - "6381:6379"
+
+  # Expose Analytics service
+  analytics:
+    ports:
+      - "8003:8003"
+
+  # Expose Kafka broker
+  kafka:
+    ports:
+      - "9092:9092"

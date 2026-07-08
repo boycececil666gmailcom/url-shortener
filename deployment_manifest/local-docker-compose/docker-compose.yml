@@ -42,6 +42,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@shortener-db:5432/urlshortener
       REDIS_URL: redis://shortener-redis:6379
       CACHE_TTL_SECONDS: 86400
+      KAFKA_BROKER_URL: ${KAFKA_BROKER_URL:-kafka:9092}
     volumes:
       # Mount source so --reload picks up changes without rebuilding the image
       - ../../services/shortener:/app/shortener
@@ -49,6 +50,8 @@ services:
       shortener-db:
         condition: service_healthy
       shortener-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   # ═══════════════════════════════════════════════════════════════════════════════
@@ -105,6 +108,46 @@ services:
         condition: service_healthy
 
   # ═══════════════════════════════════════════════════════════════════════════════
+  # Kafka Infrastructure
+  # ═══════════════════════════════════════════════════════════════════════════════
+  kafka:
+    image: apache/kafka:3.7.0
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_BROKER_URL:-kafka:9092}
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # Analytics Infrastructure
+  # ═══════════════════════════════════════════════════════════════════════════════
+  analytics:
+    build:
+      context: ../../
+      dockerfile: services/analytics/Dockerfile
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKER_URL: ${KAFKA_BROKER_URL:-kafka:9092}
+    volumes:
+      - ../../services/analytics:/app/analytics
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # ═══════════════════════════════════════════════════════════════════════════════
   # API Gateway
   # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -119,6 +162,7 @@ services:
     environment:
       SHORTENER_URL: http://shortener:8001
       AUTH_URL: http://auth:8002
+      ANALYTICS_URL: http://analytics:8003
     ports:
       # Only the gateway is exposed to the host — all other services are internal.
       - "8000:8000"
@@ -127,6 +171,7 @@ services:
     depends_on:
       - shortener
       - auth
+      - analytics
 
 # ── Named volumes for DB persistence ────────────────────────────────────────
 volumes:
