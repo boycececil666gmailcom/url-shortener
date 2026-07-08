@@ -18,9 +18,6 @@ RUN uv sync --frozen --no-dev
 # ── Copy application source ───────────────────────────────────────────────────
 COPY services/auth/ ./auth/
 
-# ── Expose port ───────────────────────────────────────────────────────────────
-EXPOSE 8002
-
 # ── Run the server ────────────────────────────────────────────────────────────
 # Internal service — not exposed to the host, only reachable inside Docker network.
 CMD ["uv", "run", "uvicorn", "auth.main:app", \

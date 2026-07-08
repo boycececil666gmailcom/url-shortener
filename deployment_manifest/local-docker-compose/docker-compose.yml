@@ -35,7 +35,7 @@ services:
   # NOT exposed to the host — only reachable inside the Docker network.
   shortener:
     build:
-      context: .
+      context: ../../
       dockerfile: services/shortener/Dockerfile
     restart: unless-stopped
     environment:
@@ -44,7 +44,7 @@ services:
       CACHE_TTL_SECONDS: 86400
     volumes:
       # Mount source so --reload picks up changes without rebuilding the image
-      - ./services/shortener:/app/shortener
+      - ../../services/shortener:/app/shortener
     depends_on:
       shortener-db:
         condition: service_healthy
@@ -86,7 +86,7 @@ services:
   # NOT exposed to the host — only reachable inside the Docker network.
   auth:
     build:
-      context: .
+      context: ../../
       dockerfile: services/auth/Dockerfile
     restart: unless-stopped
     environment:
@@ -97,7 +97,7 @@ services:
       JWT_EXPIRATION_MINUTES: 15
       REFRESH_TOKEN_TTL_SECONDS: 2592000
     volumes:
-      - ./services/auth:/app/auth
+      - ../../services/auth:/app/auth
     depends_on:
       auth-db:
         condition: service_healthy
@@ -113,7 +113,7 @@ services:
   # Forwards to internal services via httpx (no business logic here).
   gateway:
     build:
-      context: .
+      context: ../../
       dockerfile: services/gateway/Dockerfile
     restart: unless-stopped
     environment:
@@ -123,7 +123,7 @@ services:
       # Only the gateway is exposed to the host — all other services are internal.
       - "8000:8000"
     volumes:
-      - ./services/gateway:/app/gateway
+      - ../../services/gateway:/app/gateway
     depends_on:
       - shortener
       - auth

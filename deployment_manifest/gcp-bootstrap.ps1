@@ -45,7 +45,7 @@ docker push "$REGISTRY/shortener:$SHORTENER_TAG"
 
 # 3. Run Terraform to provision GKE Cluster, Namespace, and Helm Operators
 Write-Output "Running Terraform to provision GKE and Operators..."
-Push-Location terraform-gcp
+Push-Location deployment_manifest/terraform-gcp
 try {
     terraform init
     if ($LASTEXITCODE -ne 0) { throw "Terraform init failed with exit code $LASTEXITCODE." }
@@ -75,11 +75,11 @@ gcloud container clusters get-credentials $CLUSTER_NAME `
 
 # 5. Apply Application Config and DB/Redis Resources
 Write-Output "Deploying config, secrets, and database/cache clusters..."
-kubectl apply -f k8s-gcp/config.yaml
-kubectl apply -f k8s-gcp/auth/db-cluster.yaml
-kubectl apply -f k8s-gcp/auth/redis-cluster.yaml
-kubectl apply -f k8s-gcp/shortener/db-cluster.yaml
-kubectl apply -f k8s-gcp/shortener/redis-cluster.yaml
+kubectl apply -f deployment_manifest/k8s-gcp/config.yaml
+kubectl apply -f deployment_manifest/k8s-gcp/auth/db-cluster.yaml
+kubectl apply -f deployment_manifest/k8s-gcp/auth/redis-cluster.yaml
+kubectl apply -f deployment_manifest/k8s-gcp/shortener/db-cluster.yaml
+kubectl apply -f deployment_manifest/k8s-gcp/shortener/redis-cluster.yaml
 
 # 6. Wait for databases to initialize
 Write-Output "Waiting for PostgreSQL clusters to initialize..."
@@ -100,10 +100,10 @@ kubectl exec -n $NAMESPACE $AUTH_DB_POD -c postgres -- psql -U postgres -c "CREA
 
 # 7. Apply Application Deployments (Auth, Shortener, Gateway)
 Write-Output "Deploying application services..."
-kubectl apply -f k8s-gcp/auth/app.yaml
-kubectl apply -f k8s-gcp/shortener/app.yaml
-kubectl apply -f k8s-gcp/gateway/app.yaml
-kubectl apply -f k8s-gcp/gateway/ingress.yaml
+kubectl apply -f deployment_manifest/k8s-gcp/auth/app.yaml
+kubectl apply -f deployment_manifest/k8s-gcp/shortener/app.yaml
+kubectl apply -f deployment_manifest/k8s-gcp/gateway/app.yaml
+kubectl apply -f deployment_manifest/k8s-gcp/gateway/ingress.yaml
 
 Write-Output "Updating deployment images to match script tags..."
 kubectl set image deployment/gateway gateway="$REGISTRY/gateway:$GATEWAY_TAG" -n $NAMESPACE

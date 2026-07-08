@@ -1,6 +1,10 @@
+import asyncio
+import json
+import os
 from contextlib import asynccontextmanager
 
 import asyncpg
+from aiokafka import AIOKafkaProducer
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 
@@ -10,8 +14,13 @@ from .database import close_pool, create_db_pool, get_db
 from .schemas import ShortenRequest, URLCreateResponse, URLLookupResponse
 
 
+KAFKA_BROKER_URL = os.environ.get("KAFKA_BROKER_URL", "kafka:9092")
+KAFKA_TOPIC = "url-redirects"
+kafka_producer = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global kafka_producer
     """Open the DB pool and create the table on startup; close pool on shutdown."""
     await create_db_pool()
     await create_redis_pool()
@@ -27,8 +36,20 @@ async def lifespan(app: FastAPI):
             )
         """)
 
+    # Start Kafka Producer
+    try:
+        kafka_producer = AIOKafkaProducer(
+            bootstrap_servers=KAFKA_BROKER_URL,
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+        await kafka_producer.start()
+    except Exception as e:
+        print(f"Failed to start Kafka producer: {e}")
+
     yield
 
+    if kafka_producer:
+        await kafka_producer.stop()
     await close_pool()
     await close_redis_pool()
 
@@ -93,6 +114,14 @@ async def get_url(
     )
 
 
+async def send_analytics_event(short_url: int):
+    if kafka_producer:
+        try:
+            event = {"short_url": short_url, "event": "redirect"}
+            await kafka_producer.send_and_wait(KAFKA_TOPIC, event)
+        except Exception as e:
+            print(f"Failed to send Kafka event: {e}")
+
 @app.get("/r/{short_url}")
 async def redirect(
     short_url: int,
@@ -105,6 +134,7 @@ async def redirect(
     # ── Cache hit ─────────────────────────────────────────────────────────────
     cached = await get_cached_url(short_url)
     if cached is not None:
+        asyncio.create_task(send_analytics_event(short_url))
         return RedirectResponse(url=cached["long_url"], status_code=302)
 
     # ── Cache miss: fall back to Postgres ─────────────────────────────────────
@@ -113,4 +143,5 @@ async def redirect(
         raise HTTPException(status_code=404, detail="Short URL not found")
 
     await set_cached_url(url_row)
+    asyncio.create_task(send_analytics_event(short_url))
     return RedirectResponse(url=url_row["long_url"], status_code=302)

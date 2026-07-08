@@ -6,5 +6,5 @@ And in production, the mapping should only happen to the API Gateway.
 To start the environment for testing, run:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose -f deployment_manifest/local-docker-compose/docker-compose.yml -f deployment_manifest/local-docker-compose/docker-compose.dev.yml up -d
 ```

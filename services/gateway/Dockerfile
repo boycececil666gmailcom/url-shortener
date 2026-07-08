@@ -17,9 +17,6 @@ RUN uv sync --frozen --no-dev
 # ── Copy application source ───────────────────────────────────────────────────
 COPY services/gateway/ ./gateway/
 
-# ── Expose port ───────────────────────────────────────────────────────────────
-EXPOSE 8000
-
 # ── Run the server ────────────────────────────────────────────────────────────
 CMD ["uv", "run", "uvicorn", "gateway.main:app", \
      "--host", "0.0.0.0", "--port", "8000", "--reload"]

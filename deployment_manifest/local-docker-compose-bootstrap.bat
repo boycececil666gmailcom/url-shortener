@@ -19,11 +19,11 @@ kubectl wait --for=condition=established crd/redisfailovers.databases.spotahome.
 echo.
 
 echo 2. Applying base configurations and secrets...
-kubectl apply -f k8s/config.yaml
+kubectl apply -f deployment_manifest/k8s/config.yaml
 echo.
 
 echo 3. Applying all Kubernetes manifests...
-kubectl apply -R -f k8s/
+kubectl apply -R -f deployment_manifest/k8s/
 echo.
 
 echo ========================================================

@@ -20,9 +20,6 @@ RUN uv sync --frozen --no-dev
 # ── Copy application source ───────────────────────────────────────────────────
 COPY services/shortener/ ./shortener/
 
-# ── Expose port ───────────────────────────────────────────────────────────────
-EXPOSE 8001
-
 # ── Run the server ────────────────────────────────────────────────────────────
 # Internal service — not exposed to the host, only reachable inside Docker network.
 CMD ["uv", "run", "uvicorn", "shortener.main:app", \

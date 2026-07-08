@@ -13,7 +13,7 @@ echo.
 echo ========================================================
 echo 2. Starting Docker Compose Environment
 echo ========================================================
-docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml up -d
+docker compose -f ../deployment_manifest/local-docker-compose/docker-compose.yml -f ../deployment_manifest/local-docker-compose/docker-compose.dev.yml up -d
 
 echo.
 echo ========================================================
@@ -39,20 +39,20 @@ echo ========================================================
 echo 4. Flushing databases and caches
 echo ========================================================
 echo Flushing Shortener PostgreSQL...
-docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T shortener-db psql -U postgres -d urlshortener -c "TRUNCATE TABLE urls RESTART IDENTITY CASCADE;"
+docker compose -f ../deployment_manifest/local-docker-compose/docker-compose.yml -f ../deployment_manifest/local-docker-compose/docker-compose.dev.yml exec -T shortener-db psql -U postgres -d urlshortener -c "TRUNCATE TABLE urls RESTART IDENTITY CASCADE;"
 
 echo Flushing Auth PostgreSQL...
-docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T auth-db psql -U postgres -d auth -c "TRUNCATE TABLE users RESTART IDENTITY CASCADE;"
+docker compose -f ../deployment_manifest/local-docker-compose/docker-compose.yml -f ../deployment_manifest/local-docker-compose/docker-compose.dev.yml exec -T auth-db psql -U postgres -d auth -c "TRUNCATE TABLE users RESTART IDENTITY CASCADE;"
 
 echo Flushing Shortener Redis Cluster...
-docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T shortener-redis-1 redis-cli FLUSHALL
-docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T shortener-redis-2 redis-cli FLUSHALL
-docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T shortener-redis-3 redis-cli FLUSHALL
+docker compose -f ../deployment_manifest/local-docker-compose/docker-compose.yml -f ../deployment_manifest/local-docker-compose/docker-compose.dev.yml exec -T shortener-redis-1 redis-cli FLUSHALL
+docker compose -f ../deployment_manifest/local-docker-compose/docker-compose.yml -f ../deployment_manifest/local-docker-compose/docker-compose.dev.yml exec -T shortener-redis-2 redis-cli FLUSHALL
+docker compose -f ../deployment_manifest/local-docker-compose/docker-compose.yml -f ../deployment_manifest/local-docker-compose/docker-compose.dev.yml exec -T shortener-redis-3 redis-cli FLUSHALL
 
 echo Flushing Auth Redis Cluster...
-docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T auth-redis-1 redis-cli FLUSHALL
-docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T auth-redis-2 redis-cli FLUSHALL
-docker compose -f ../docker-compose.yml -f ../docker-compose.dev.yml exec -T auth-redis-3 redis-cli FLUSHALL
+docker compose -f ../deployment_manifest/local-docker-compose/docker-compose.yml -f ../deployment_manifest/local-docker-compose/docker-compose.dev.yml exec -T auth-redis-1 redis-cli FLUSHALL
+docker compose -f ../deployment_manifest/local-docker-compose/docker-compose.yml -f ../deployment_manifest/local-docker-compose/docker-compose.dev.yml exec -T auth-redis-2 redis-cli FLUSHALL
+docker compose -f ../deployment_manifest/local-docker-compose/docker-compose.yml -f ../deployment_manifest/local-docker-compose/docker-compose.dev.yml exec -T auth-redis-3 redis-cli FLUSHALL
 
 echo.
 echo ========================================================

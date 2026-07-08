@@ -21,6 +21,7 @@ from fastapi import FastAPI, HTTPException, Request, Response, Depends
 # These are Docker internal hostnames — not exposed to the outside world.
 SHORTENER_URL = os.environ.get("SHORTENER_URL", "http://shortener:8001")
 AUTH_URL = os.environ.get("AUTH_URL", "http://auth:8002")
+ANALYTICS_URL = os.environ.get("ANALYTICS_URL", "http://analytics:8003")
 
 
 # ── Shared async httpx client ─────────────────────────────────────────────────
@@ -96,6 +97,18 @@ async def shorten_url(request: Request, token: dict = Depends(verify_token)):
 async def get_url(short_url: int, token: dict = Depends(verify_token)):
     """Forward GET /api/v1/urls/{short_url} to the Shortener service."""
     resp = await get_client().get(f"{SHORTENER_URL}/urls/{short_url}")
+    _raise_for_upstream_error(resp)
+    return Response(
+        content=resp.content,
+        status_code=resp.status_code,
+        media_type="application/json",
+    )
+
+
+@app.get("/api/v1/analytics/stats")
+async def get_analytics_stats(token: dict = Depends(verify_token)):
+    """Forward GET /api/v1/analytics/stats to the Analytics service."""
+    resp = await get_client().get(f"{ANALYTICS_URL}/stats")
     _raise_for_upstream_error(resp)
     return Response(
         content=resp.content,

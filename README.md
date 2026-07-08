@@ -107,6 +107,16 @@ flowchart TB
             LogoutH["POST /auth/logout"]
         end
 
+        subgraph AnalyticsCtr["analytics (FastAPI + Uvicorn, port 8003)"]
+            direction TB
+            StatsH["GET /stats"]
+            ConsumeH["Kafka Consumer"]
+        end
+
+        subgraph KafkaCtr["kafka (Apache Kafka, port 9092)"]
+            Topic["topic: url-redirects"]
+        end
+
         subgraph RedisCtr["shortener-redis (Redis 7, port 6379)"]
             Cache["key: url:{id}<br/>TTL: 24h"]
         end
@@ -128,10 +138,13 @@ flowchart TB
     ExternalClient -->|"port 8000 - only exposed port"| GW
     GW -->|"httpx - internal network only"| ShortenerCtr
     GW -->|"httpx - internal network only"| AuthCtr
+    GW -->|"httpx - internal network only"| AnalyticsCtr
     WriteH -->|"INSERT ON CONFLICT"| PG
     ReadH -->|"GET url:{id}"| Cache
     Cache -.->|"Cache MISS"| PG
     PG -.->|"Cache WARM"| Cache
+    ReadH -->|"Publish event (async)"| KafkaCtr
+    KafkaCtr -.->|"Consume event"| ConsumeH
     LoginH -->|"SELECT / INSERT"| UserPG
     LoginH -->|"SET refresh_token:{token}"| TokenStore
     RefreshH -->|"GET refresh_token:{token}"| TokenStore

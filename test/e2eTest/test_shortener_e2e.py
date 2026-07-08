@@ -106,12 +106,45 @@ class TestFullUserJourney:
         data = response.json()
         assert data["long_url"] == self.long_url, f"long_url mismatch: {data}"
         assert data["short_url"] == self.short_url_id, f"short_url mismatch: {data}"
-        
+
+    def test_06_redirect_and_analytics(self):
+        """Test redirecting via short URL and verifying analytics tracks it via Kafka."""
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+        stats_url = f"{GATEWAY_URL}/api/v1/analytics/stats"
+
+        # 1. Fetch current stats (handling case where service is booting or empty)
+        try:
+            initial_resp = requests.get(stats_url, headers=headers)
+            assert initial_resp.status_code == 200, f"Failed to get initial stats: {initial_resp.text}"
+            initial_stats = initial_resp.json()
+            initial_redirects = initial_stats.get("total_redirects", 0)
+            initial_count_for_url = initial_stats.get("redirects_by_short_url", {}).get(str(self.short_url_id), 0)
+        except Exception as e:
+            # If analytics isn't up yet or fails, we fail
+            pytest.fail(f"Could not connect to analytics service via gateway: {e}")
+
+        # 2. Hit redirect endpoint (does not require auth)
+        redirect_resp = requests.get(f"{GATEWAY_URL}/r/{self.short_url_id}", allow_redirects=False)
+        assert redirect_resp.status_code == 302, f"Expected 302, got {redirect_resp.status_code}"
+        assert redirect_resp.headers.get("Location") == self.long_url
+
+        # 3. Wait a moment for Kafka async event delivery and consumption
+        time.sleep(2)
+
+        # 4. Fetch updated stats
+        updated_resp = requests.get(stats_url, headers=headers)
+        assert updated_resp.status_code == 200, f"Failed to get updated stats: {updated_resp.text}"
+        updated_stats = updated_resp.json()
+
+        # 5. Assert counts increased
+        assert updated_stats.get("total_redirects", 0) == initial_redirects + 1
+        assert updated_stats.get("redirects_by_short_url", {}).get(str(self.short_url_id), 0) == initial_count_for_url + 1
+
     # ==========================================
     # 3. CLEANUP / LOGOUT
     # ==========================================
 
-    def test_06_logout(self):
+    def test_07_logout(self):
         """Test the deleting/logout endpoint to invalidate the session."""
         # This should clear the refresh_token cookie
         response = self.session.post(f"{GATEWAY_URL}/auth/logout")

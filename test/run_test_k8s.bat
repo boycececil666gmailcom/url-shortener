@@ -34,8 +34,8 @@ kubectl wait --for=condition=established crd/postgresqls.acid.zalan.do --timeout
 kubectl wait --for=condition=established crd/redisfailovers.databases.spotahome.com --timeout=60s
 echo.
 
-kubectl apply -f "%~dp0..\k8s\config.yaml"
-kubectl apply -R -f "%~dp0..\k8s"
+kubectl apply -f "%~dp0..\deployment_manifest\k8s\config.yaml"
+kubectl apply -R -f "%~dp0..\deployment_manifest\k8s"
 
 echo.
 echo Waiting for Database and Cache Master pods to be created...
