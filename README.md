@@ -1,3 +1,29 @@
+# Core Concept
+
+> A simple flow showing how the URL shortener operates: creating a short link, redirecting visitors, and collecting click stats.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Visitor as Visitor / User
+    participant S as URL Shortener
+    participant A as Click Analytics
+
+    Note over Visitor, S: Phase 1: Shorten URL
+    Visitor->>S: Submit Long URL (e.g., https://example.com/very-long-path?id=123)
+    S-->>Visitor: Return Branded Short URL (e.g., https://shrt.co/xYz9b)
+
+    Note over Visitor, S: Phase 2: Access & Tracking
+    Visitor->>S: Click Short URL (https://shrt.co/xYz9b)
+    S-->>Visitor: HTTP 302 Redirect (Location: https://example.com/very-long-path?id=123)
+    
+    Note over S, A: Asynchronous Tracking (Background)
+    S-)+A: Capture click event (stats count +1)
+    deactivate A
+```
+
+---
+
 # High-Level Architecture
 
 > This diagram shows the **target production design**
