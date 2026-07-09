@@ -1,5 +1,12 @@
 # Core Concept
 
+A URL Shortener is a service that translates long, complex URLs into short, clean aliases (slugs) to make them easier to share and track.
+
+### How it works:
+*   **Generation (Write Path)**: A user submits a long URL. The system generates a unique slug (e.g., Base62 encoding of an auto-incrementing ID or hash), saves the mapping in the database, and returns the shortened URL.
+*   **Redirection (Read Path)**: When a user visits the short URL, the gateway performs a fast lookup (caching the mapping in memory/Redis to minimize database load) and returns an HTTP `302 Found` (or `301 Moved Permanently`) redirect to the original URL.
+*   **Analytics (Async Path)**: While redirecting, the system triggers a background tracking event (e.g., via a message queue like Kafka) to log click information and compile reports without delaying the redirect.
+
 > A simple flow showing how the URL shortener operates: creating a short link, redirecting visitors, and collecting click stats.
 
 ```mermaid
