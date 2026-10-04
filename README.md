@@ -102,6 +102,8 @@ Set `alarm_topic_arn` in `terraform.tfvars` if CloudWatch alarms should notify a
 
 For local Jenkins, set `AWS_CONFIG_DIR` to the host directory containing your AWS configuration before running `docker compose -f docker-compose.jenkins.yml up --build`. Jenkins listens only on `127.0.0.1:8080`; complete the normal first-run administrator setup instead of disabling authentication.
 
+For database inspection using DBeaver or CloudBeaver, run `docker compose -f docker-compose.dbeaver.yml up -d`. CloudBeaver listens on `127.0.0.1:8978` with host AWS credentials mounted to inspect DynamoDB tables, or use DBeaver desktop connected directly to your database instances.
+
 ## Environment variables
 
 | Lambda | Variable | Required | Meaning |

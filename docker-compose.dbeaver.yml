@@ -1,0 +1,18 @@
+# #region DBeaver Service
+services:
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: url-shortener-dbeaver
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8978:8978"
+    volumes:
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
+      - :/root/.aws:ro
+    environment:
+      - CB_SERVER_NAME=url-shortener-dbeaver
+      - CB_SERVER_PORT=8978
+
+volumes:
+  cloudbeaver_data:
+# #endregion
